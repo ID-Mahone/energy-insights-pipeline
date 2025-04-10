@@ -1,0 +1,11 @@
+
+---
+
+## **7. `.gitignore`**
+
+```text
+__pycache__/
+.env
+*.pyc
+pgdata/
+.ipynb_checkpoints/

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: energy_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: energy
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_NAME: energy_db
+      DB_USER: energy_user
+      DB_PASS: energy_pass
+
+volumes:
+  pgdata:
