@@ -1,6 +1,6 @@
 # ⚡ Energy Insights Pipeline
 
-A containerized data pipeline for processing, storing, and forecasting electricity load data in Germany. This project combines modern data engineering practices (ETL, PostgreSQL, Docker) with robust time series forecasting using Prophet.
+A containerized data pipeline for processing, storing, and forecasting electricity load data in Germany based on Open Data. 
 
 ---
 
