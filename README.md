@@ -137,6 +137,8 @@ energy-insights-pipeline/
 
 ## 🧠 Known Issues
 
+Warning about plotly still being unable to be imported is unrelated to the core functionality of the script.
+
 ---
 
 ## 🧭 Roadmap
