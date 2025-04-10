@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from forecasting.database import get_db, Forecast
 from prophet import Prophet
 import os
@@ -30,7 +31,7 @@ def read_root():
     return {"message": "⚡ Welcome to the Energy Forecast API!"}
 
 @app.get("/predict")
-def get_forecast(days: int = Query(default=30, ge=1, le=365)):
+def get_forecast(days: int = Query(default=30, ge=1, le=365), db: Session = Depends(get_db)):
     if not model:
         logger.error("Model not loaded!")
         return JSONResponse(content={"error": "Model not loaded"}, status_code=500)
@@ -46,7 +47,7 @@ def get_forecast(days: int = Query(default=30, ge=1, le=365)):
         #Save forecast data to DB 
         logger.info(f"Saving forecast data to DB...")
         for index, row in forecast_subset.iterrows():
-            db.add(forecast(ds=row['ds'], yhat=row['yhat'], yhat_lower=row['yhat_lower'], yhat_upper=row['yhat_upper']))
+            db.add(Forecast(ds=row['ds'], yhat=row['yhat'], yhat_lower=row['yhat_lower'], yhat_upper=row['yhat_upper']))
 
         db.commit()
         logger.info("Forecast data saved successfully")
@@ -60,7 +61,7 @@ def get_forecast(days: int = Query(default=30, ge=1, le=365)):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
     except Exception as e:
-        logger.error(f"Unexpected error: {strg(e)}")
+        logger.error(f"Unexpected error: {str(e)}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/get_forecasts")
