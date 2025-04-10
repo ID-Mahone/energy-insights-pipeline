@@ -1,6 +1,6 @@
 # ⚡ Energy Insights Pipeline
 
-A containerized data pipeline for processing, storing, and forecasting electricity load data in Germany based on Open Data. 
+A containerized data pipeline for processing, storing, and forecasting electricity load data in Germany based on Open Data. It integrates forecasting models, database management, and REST API endpoints for easy consumption of forecast results.
 
 ---
 
@@ -26,8 +26,14 @@ A containerized data pipeline for processing, storing, and forecasting electrici
                                     v
                        +------------+-------------+
                        |   Forecasting (Prophet)   |
-                       |   `forecasting/model.py` |
-                       +--------------------------+
+                       |   `forecasting/model.py`  |
+                       +-------------+-------------+
+                                    |
+                                    v
+                       +-----------------------------+
+                       |   API Service (FastAPI)      |
+                       |   `forecasting/serve.py`     |
+                       +-----------------------------+
 ```
 
 ---
@@ -40,6 +46,14 @@ A containerized data pipeline for processing, storing, and forecasting electrici
 - [Docker Compose](https://docs.docker.com/compose/)
 - Python 3.9+ with `venv` or `pyenv` (for running forecasting scripts locally)
 - Prophet (https://facebook.github.io/prophet/)
+
+**Required Python Libraries:**
+- `prophet`: For time-series forecasting
+- `fastapi`: To serve the model via a REST API
+- `uvicorn`: ASGI server to run FastAPI
+- `plotly`: For interactive visualization
+- `psycopg2`: For PostgreSQL database interaction
+- `joblib`: For model persistence
 
 ---
 
@@ -58,13 +72,13 @@ cd energy-insights-pipeline
 docker-compose up -d
 ```
 
-This boots a PostgreSQL container (`energy_postgres`) exposing port `5432`.
+This will spin up a PostgreSQL container (`energy_postgres`) exposing port `5432`.
 
 ---
 
 ### 3. Verify the Database Setup
 
-Once the container is running:
+Once the container is running, verify that the database is set up correctly:
 
 ```bash
 docker exec -it energy_postgres psql -U postgres -d energy
@@ -91,11 +105,24 @@ python3 model.py
 
 ---
 
+### 5. Serve the Forecast with FastAPI
+
+To start the FastAPI server and serve the forecasting model as an API:
+
+```bash
+cd forecasting
+uvicorn serve:app --reload
+```
+
+This starts the FastAPI server at [http://127.0.0.1:8000](http://127.0.0.1:8000). You can now access the forecasting endpoint to make predictions.
+
+---
+
 ## 🛠 Configuration
 
 ### `.env` (optional)
 
-You can define database credentials and host info in a `.env` file:
+You can define database credentials and host info in a `.env` file for easy configuration:
 
 ```
 POSTGRES_USER=postgres
@@ -132,6 +159,7 @@ energy-insights-pipeline/
 | Forecasting    | Prophet                |
 | Database       | PostgreSQL 15            |
 | Container Mgmt | Docker & Docker Compose  |
+| API            | FastAPI                  |
 | Visualization  | Plotly / Dash            |
 
 ---
