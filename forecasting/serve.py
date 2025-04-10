@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 import pandas as pd
@@ -6,9 +7,12 @@ from prophet import Prophet
 
 app = FastAPI()
 
+# Absolute path to model
+model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
+
 # Load the trained model
 try:
-    model: Prophet = joblib.load("model.pkl")
+    model: Prophet = joblib.load(model_path)
 except Exception as e:
     print(f"❌ Failed to load model: {e}")
     model = None
