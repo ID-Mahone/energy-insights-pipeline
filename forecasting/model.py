@@ -1,10 +1,11 @@
 import pandas as pd
 from prophet import Prophet
 from sqlalchemy import create_engine
-import plotly.graph_objects as go  # Import plotly
+import plotly.graph_objects as go
 import psycopg2
 import time
 import os
+import joblib
 
 def connect_db(retries=5, delay=5):
     """Establish database connection with retry logic"""
@@ -28,52 +29,54 @@ def connect_db(retries=5, delay=5):
 try:
     # Connect to database
     conn = connect_db()
-    
+
     # Load data
     query = "SELECT timestamp, daily_avg_load_mw FROM daily_load"
-
-    # Read from DB
     df = pd.read_sql(query, conn)
 
     # Check if data is empty
     if df.empty:
         raise ValueError("DataFrame is empty. Check your database and query.")
 
-    # Format data for Prophet
-    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)  # Ensure the timestamp is in UTC
-    df['timestamp'] = df['timestamp'].dt.tz_localize(None)  # Remove timezone information
+    # Convert to UTC then remove timezone info (Prophet requirement)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+    df['timestamp'] = df['timestamp'].dt.tz_localize(None)
 
-    # Rename columns to match Prophet's expectations
+    # Rename columns for Prophet
     df.rename(columns={'timestamp': 'ds', 'daily_avg_load_mw': 'y'}, inplace=True)
 
+    # Check if model already exists
+    model_path = "model.pkl"
+    if os.path.exists(model_path):
+        print("ℹ️ model.pkl already exists. Skipping training.")
+        model = joblib.load(model_path)
+    else:
+        # Train and save the model
+        model = Prophet()
+        model.fit(df)
+        joblib.dump(model, model_path)
+        print("✅ Model trained and saved to model.pkl")
 
-    # Initialize and fit the model
-    model = Prophet()
-    model.fit(df)
-
-    # Make future predictions
+    # Generate future dataframe and forecast
     future = model.make_future_dataframe(periods=365)
     forecast = model.predict(future)
 
-    # Create plotly figure for interactive plotting
+    # Create Plotly figure
     fig = go.Figure()
 
-    # Add forecast trace
     fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecast'))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], fill=None, mode='lines',
+                             line_color='gray', name='Lower Bound'))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], fill='tonexty', mode='lines',
+                             line_color='gray', name='Upper Bound'))
 
-    # Add confidence interval traces
-    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], fill=None, mode='lines', line_color='gray', name='Lower Bound'))
-    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], fill='tonexty', mode='lines', line_color='gray', name='Upper Bound'))
-
-    # Update layout for plotly
     fig.update_layout(
         title="Forecast: Daily Energy Load (MW)",
         xaxis_title="Date",
         yaxis_title="Load (MW)",
-        template="plotly_dark"  # Optional: you can choose different themes
+        template="plotly_dark"
     )
 
-    # Show the interactive plot
     fig.show()
 
 except Exception as e:
