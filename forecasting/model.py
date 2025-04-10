@@ -1,5 +1,6 @@
 import pandas as pd
 from prophet import Prophet
+from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
 import psycopg2
 import time
@@ -30,6 +31,8 @@ try:
     
     # Load data
     query = "SELECT timestamp, daily_avg_load_mw FROM daily_load"
+
+    # Read from DB
     df = pd.read_sql(query, conn)
 
     # Check if data is empty
@@ -37,7 +40,10 @@ try:
         raise ValueError("DataFrame is empty. Check your database and query.")
 
     # Format data for Prophet
-    df['timestamp'] = pd.to_datetime(df['timestamp'])  # Ensure datetime format
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)  # Make sure timestamp is UTC-aware
+    df['timestamp'] = df['timestamp'].dt.tz_localize(None)  # Remove timezone information (make it naive)
+
+    # Rename columns for Prophet
     df.rename(columns={'timestamp': 'ds', 'daily_avg_load_mw': 'y'}, inplace=True)
 
     # Initialize and fit the model
