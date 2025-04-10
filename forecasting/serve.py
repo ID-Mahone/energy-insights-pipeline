@@ -1,9 +1,12 @@
-import os
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from forecasting.database import get_db, Forecast
+from prophet import Prophet
+import os
 import pandas as pd
 import joblib
-from prophet import Prophet
+
 
 app = FastAPI()
 
@@ -34,3 +37,8 @@ def get_forecast(days: int = Query(default=30, ge=1, le=365)):
         return forecast_json
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/get_forecasts")
+def get_forecasts(db: Session = Depends(get_db)):
+    forecasts = db.query(Forecast).all()  # Get all forecast data from the table
+    return forecasts
