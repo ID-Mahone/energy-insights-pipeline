@@ -1,7 +1,7 @@
 import pandas as pd
 from prophet import Prophet
 from sqlalchemy import create_engine
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go  # Import plotly
 import psycopg2
 import time
 import os
@@ -40,11 +40,12 @@ try:
         raise ValueError("DataFrame is empty. Check your database and query.")
 
     # Format data for Prophet
-    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)  # Make sure timestamp is UTC-aware
-    df['timestamp'] = df['timestamp'].dt.tz_localize(None)  # Remove timezone information (make it naive)
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)  # Ensure the timestamp is in UTC
+    df['timestamp'] = df['timestamp'].dt.tz_localize(None)  # Remove timezone information
 
-    # Rename columns for Prophet
+    # Rename columns to match Prophet's expectations
     df.rename(columns={'timestamp': 'ds', 'daily_avg_load_mw': 'y'}, inplace=True)
+
 
     # Initialize and fit the model
     model = Prophet()
@@ -54,13 +55,26 @@ try:
     future = model.make_future_dataframe(periods=365)
     forecast = model.predict(future)
 
-    # Plot the forecast
-    fig = model.plot(forecast)
-    plt.title("Forecast: Daily Energy Load (MW)")
-    plt.xlabel("Date")
-    plt.ylabel("Load (MW)")
-    plt.tight_layout()
-    plt.show()
+    # Create plotly figure for interactive plotting
+    fig = go.Figure()
+
+    # Add forecast trace
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecast'))
+
+    # Add confidence interval traces
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], fill=None, mode='lines', line_color='gray', name='Lower Bound'))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], fill='tonexty', mode='lines', line_color='gray', name='Upper Bound'))
+
+    # Update layout for plotly
+    fig.update_layout(
+        title="Forecast: Daily Energy Load (MW)",
+        xaxis_title="Date",
+        yaxis_title="Load (MW)",
+        template="plotly_dark"  # Optional: you can choose different themes
+    )
+
+    # Show the interactive plot
+    fig.show()
 
 except Exception as e:
     print(f"❌ Error: {e}")
