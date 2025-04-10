@@ -8,6 +8,7 @@ import pandas as pd
 import joblib
 
 
+
 app = FastAPI()
 
 # Absolute path to model
@@ -33,12 +34,22 @@ def get_forecast(days: int = Query(default=30, ge=1, le=365)):
         future = model.make_future_dataframe(periods=days)
         forecast = model.predict(future)
         forecast_subset = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
+
+        #Save forecast data to DB 
+        for index, row in forecast_subset.iterrows():
+            db.add(forecast(ds=row['ds'], yhat=row['yhat'], yhat_lower=row['yhat_lower'], yhat_upper=row['yhat_upper']))
+
+        db.commit()
+
         forecast_json = forecast_subset.to_dict(orient="records")
         return forecast_json
+    except SQLAlchemyError as e:
+        db.rollback()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.get("/get_forecasts")
 def get_forecasts(db: Session = Depends(get_db)):
     forecasts = db.query(Forecast).all()  # Get all forecast data from the table
-    return forecasts
+    return [{"ds": f.ds, "yhat": f.yhat, "yhat_lower":f.yhat_lower,"yhat_upper":f.yhat_upper} for f in forecasts]
