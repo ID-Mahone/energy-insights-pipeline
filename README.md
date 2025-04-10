@@ -39,6 +39,7 @@ A containerized data pipeline for processing, storing, and forecasting electrici
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 - Python 3.9+ with `venv` or `pyenv` (for running forecasting scripts locally)
+- Prophet (https://facebook.github.io/prophet/)
 
 ---
 
@@ -128,10 +129,10 @@ energy-insights-pipeline/
 | Layer          | Tool                     |
 |----------------|--------------------------|
 | Language       | Python 3.9+              |
-| Forecasting    | [Prophet](https://facebook.github.io/prophet/) |
-| Database       | PostgreSQL 15 (Dockerized) |
+| Forecasting    | Prophet                |
+| Database       | PostgreSQL 15            |
 | Container Mgmt | Docker & Docker Compose  |
-| Visualization  | Plotly / Dash (optional) |
+| Visualization  | Plotly / Dash            |
 
 ---
 
