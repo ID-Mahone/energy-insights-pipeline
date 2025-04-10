@@ -5,8 +5,8 @@ services:
     image: postgres:15
     container_name: energy_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
       POSTGRES_DB: energy
     ports:
       - "5432:5432"
@@ -19,9 +19,9 @@ services:
       - postgres
     environment:
       DB_HOST: postgres
-      DB_NAME: energy_db
-      DB_USER: energy_user
-      DB_PASS: energy_pass
+      DB_NAME: energy
+      DB_USER: test
+      DB_PASS: test
 
 volumes:
   pgdata:
