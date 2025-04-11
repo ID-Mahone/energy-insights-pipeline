@@ -1,7 +1,7 @@
 import sys
 import os
 
-# Add the forecasting folder to the sys.path so we can import 'serve' from there
+# Add the forecasting folder to the sys.path to import 'serve' from sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../forecasting')))
 
 import joblib
