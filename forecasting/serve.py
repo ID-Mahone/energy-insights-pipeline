@@ -5,26 +5,25 @@ from sqlalchemy.exc import SQLAlchemyError
 from forecasting.database import get_db, Forecast
 from prophet import Prophet
 from forecasting.auth import api_key_auth
-from fastapi_limiter import FastAPILimiter
+from fastapi_limiter import FastAPILimiter 
 from fastapi_limiter.depends import RateLimiter
+from redis.asyncio import Redis
 import os
 import pandas as pd
 import joblib
 import logging
-import redis
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Initialize Redis connection
-redis = redis.StrictRedis(host="localhost", port=6379, db=0)
+# Initialize Redis connection for rate limiting
+redis = Redis(host="localhost", port=6379, db=0)
 
 # Initialize the FastAPILimiter with Redis connection
 @app.on_event("startup")
 async def startup():
-    # Connect FastAPILimiter to Redis
     await FastAPILimiter.init(redis)
 
 # Absolute path to model
@@ -37,13 +36,11 @@ except Exception as e:
     print(f"❌ Failed to load model: {e}")
     model = None
 
-@app.get("/")
-@RateLimiter(times=5, seconds=60)  # Apply rate limiting for root endpoint
+@app.get("/", dependencies=[Depends(RateLimiter(times=5, seconds=60))])  # Apply rate limiting for root endpoint
 async def read_root():
     return {"message": "⚡ Welcome to the Energy Forecast API!"}
 
-@app.get("/predict")
-@RateLimiter(times=5, seconds=60)  # Apply rate limiting for predict endpoint
+@app.get("/predict", dependencies=[Depends(RateLimiter(times=5, seconds=60))])  # Apply rate limiting for predict endpoint
 async def get_forecast(
     days: int = Query(default=30, ge=1, le=365),
     db: Session = Depends(get_db),
@@ -90,4 +87,4 @@ async def get_forecast(
 @app.get("/get_forecasts")
 async def get_forecasts(db: Session = Depends(get_db)):
     forecasts = db.query(Forecast).all()  # Get all forecast data from the table
-    return [{"ds": f.ds, "yhat": f.yhat, "yhat_lower":f.yhat_lower,"yhat_upper":f.yhat_upper} for f in forecasts]
+    return [{"ds": f.ds, "yhat": f.yhat, "yhat_lower": f.yhat_lower, "yhat_upper": f.yhat_upper} for f in forecasts]
