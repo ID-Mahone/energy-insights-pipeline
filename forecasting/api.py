@@ -17,7 +17,7 @@ class ForecastRequest(BaseModel):
 def root():
     return {"message": "Energy Load Forecast API is up!"}
 
-@app.post("/forecst")
+@app.post("/forecast")
 def forecast(req: ForecastRequest):
     future = model.make_future_dataframe(periods=req.periods, freq=req.freq)
     forecast = model.predict(future)
