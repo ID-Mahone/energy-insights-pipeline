@@ -183,7 +183,7 @@ TypeError: RateLimiter.__call__() missing 1 required positional argument: 'respo
 
 ## 🤝 Contributing
 
-We welcome contributions! Please open an issue to discuss features or submit a pull request.
+I welcome contributions! Please open an issue to discuss features or submit a pull request.
 
 ---
 
