@@ -1,18 +1,25 @@
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, Date, TIMESTAMP
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, Date, TIMESTAMP, Enum
 from sqlalchemy.ext.declarative import declarative_base 
 from sqlalchemy.orm import sessionmaker
+from datetime import datetime
+from uuid import uuid4
+import enum
 import os
+
+# ------------------------------------
+# DATABASE CONFIG
+# ------------------------------------
 
 DATABASE_URL = "postgresql://postgres:password@localhost/energy"
 
-#SQLAlchemy engine and session
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Model Class
 Base = declarative_base()
 
-# Forecasts Table define
+# ------------------------------------
+# FORECAST TABLE
+# ------------------------------------
 class Forecast(Base):
     __tablename__ = "forecasts"
 
@@ -23,9 +30,35 @@ class Forecast(Base):
     yhat_upper = Column(Numeric)
     created_at = Column(TIMESTAMP, default="NOW()")
 
+# ------------------------------------
+# Enum for ForecastRequest Status
+# ------------------------------------
+class ForecastStatus(str, enum.Enum):
+    pending = "pending"
+    processing = "processing"
+    done = "done"
+    failed = "failed"
+
+# ------------------------------------
+# New: ForecastRequest Table
+# ------------------------------------
+class ForecastRequest(Base):
+    __tablename__ = "forecast_requests"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    days = Column(Integer, nullable =False)
+    status = Column(Integer, nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+# ------------------------------------
+# Create all tables
+# ------------------------------------
 Base.metadata.create_all(bind=engine)
 
-# Dependency to get DB session
+# ------------------------------------
+# DB Dependency
+# ------------------------------------
 def get_db():
     db = SessionLocal()
     try:
