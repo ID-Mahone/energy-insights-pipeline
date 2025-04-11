@@ -12,6 +12,7 @@ import os
 import pandas as pd
 import joblib
 import logging
+import hashlib
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,6 +51,17 @@ async def get_forecast(
         logger.error("Model not loaded!")
         return JSONResponse(content={"error": "Model not loaded"}, status_code=500)
 
+    # Cache key based on parameters (days)
+    cache_key = hashlib.md5(f"forecast-{days}".encode()).hexdigest()
+
+    # Fetch forecast from redis cache
+    cached_forecast = await redis.get(cache_key)
+
+    if cached_forecast:
+        logger.info(f"Cache hit for {days} days forecast.")
+        return JSONResponse(content=json.loads(cached_forecast), status_code=200)
+
+    # If not already cached, greate forecast
     try:
         logger.info(f"Generating forecast for {days} days")
         future = model.make_future_dataframe(periods=days)
@@ -73,7 +85,11 @@ async def get_forecast(
         logger.info("Forecast data saved successfully")
 
         forecast_json = forecast_subset.to_dict(orient="records")
-        return forecast_json
+
+        # Cache result in Redis 
+        await redis.setex(cache_key, 3600, json.dumps(forecast_json))
+
+        return JSONResponse(content=forecast_json, status_code=200)
 
     except SQLAlchemyError as e:
         db.rollback()
