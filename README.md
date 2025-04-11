@@ -166,8 +166,10 @@ energy-insights-pipeline/
 
 ## 🧠 Known Issues
 
-Warning about plotly still being unable to be imported is unrelated to the core functionality of the script.
+TypeError: RateLimiter.__call__() missing 1 required positional argument: 'response'
 
+1. Fixing the RateLimiter Decorator:
+2. Fixing Custom Decorators
 ---
 
 ## 🧭 Roadmap
