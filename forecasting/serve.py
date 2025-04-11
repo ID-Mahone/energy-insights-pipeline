@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, Depends
+from fastapi import FastAPI, Query, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -54,19 +54,22 @@ async def get_forecast(
     # Cache key based on parameters (days)
     cache_key = hashlib.md5(f"forecast-{days}".encode()).hexdigest()
 
-    # Fetch forecast from redis cache
+    # Check Redis cache
     cached_forecast = await redis.get(cache_key)
-
     if cached_forecast:
         logger.info(f"Cache hit for {days} days forecast.")
         return JSONResponse(content=json.loads(cached_forecast), status_code=200)
 
-    # If not already cached, greate forecast
+    # Async model generation
+    background_tasks.add_task(generate_forecast, days, db, cache_key)
+
+    return JSONResponse(content={"message":"Forecast generation in progress"}, status_code=202)
+
+    async def generate_forecast(days: int, cache_key: str):
+        db = SessionLocal()
     try:
         logger.info(f"Generating forecast for {days} days")
-        future = model.make_future_dataframe(periods=days)
-        logger.debug(f"Future DataFrame:\n{future.head()}")
-
+        future = model.make_future_dataframe(periods=days)   
         forecast = model.predict(future)
         forecast_subset = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(days)
 
@@ -80,25 +83,19 @@ async def get_forecast(
                 yhat_upper=row['yhat_upper']
             )
             db.add(forecast_entry)
-
         db.commit()
         logger.info("Forecast data saved successfully")
 
         forecast_json = forecast_subset.to_dict(orient="records")
-
-        # Cache result in Redis 
-        await redis.setex(cache_key, 3600, json.dumps(forecast_json))
-
-        return JSONResponse(content=forecast_json, status_code=200)
+        await redis.setex(cache_key, 3600, json.dumps(forecast_json)) # Cache result in Redis (1hour)
 
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"SQLAlchemy error: {str(e)}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+    finally:
+        db.close()
 
 @app.get("/get_forecasts")
 async def get_forecasts(db: Session = Depends(get_db)):
