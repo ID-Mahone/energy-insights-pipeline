@@ -1,3 +1,4 @@
+
 # ⚡ Energy Insights Pipeline
 
 A containerized data pipeline for processing, storing, and forecasting electricity load data in Germany based on Open Data. It integrates forecasting models, database management, and REST API endpoints for easy consumption of forecast results.
@@ -164,12 +165,66 @@ energy-insights-pipeline/
 
 ---
 
+## 📜 API Documentation
+
+### FastAPI automatically generates API docs at the following URLs:
+
+- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc UI**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+You can use these interfaces to interact with the API directly from your browser. They provide an easy-to-use interface for exploring all available endpoints, required parameters, and response types.
+
+---
+
+### API Endpoints
+
+#### `/predict`
+Generate a forecast for a given number of days.
+
+- **Method**: `GET`
+- **Query Parameters**:
+  - `days`: Number of days for the forecast (1-365).
+  - `api_key`: Your API key.
+- **Response**:
+  ```json
+  {
+    "message": "Forecast is being processed",
+    "request_id": 123
+  }
+  ```
+
+#### `/get_forecasts`
+Retrieve all forecast data.
+
+- **Method**: `GET`
+- **Response**:
+  ```json
+  [
+    {
+      "ds": "2025-04-01T00:00:00",
+      "yhat": 100.5,
+      "yhat_lower": 90.0,
+      "yhat_upper": 110.0
+    },
+    ...
+  ]
+  ```
+
+#### `/plot`
+Get a plot of the forecast.
+
+- **Method**: `GET`
+- **Response**: Interactive Plotly chart embedded in HTML.
+
+---
+
 ## 🧠 Known Issues
 
 TypeError: RateLimiter.__call__() missing 1 required positional argument: 'response'
 
-1. Fixing the RateLimiter Decorator:
-2. Fixing Custom Decorators
+1. Fixing the RateLimiter Decorator.
+2. Fixing Custom Decorators.
+
 ---
 
 ## 🧭 Roadmap
